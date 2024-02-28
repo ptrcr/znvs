@@ -1,0 +1,2 @@
+# znvs
+Zephyr NVS tools
