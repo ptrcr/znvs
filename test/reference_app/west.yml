@@ -1,0 +1,33 @@
+# The west manifest file for Aurora app.
+#
+# The per-installation west configuration file, .west/config, sets the
+# path to the project containing this file in the [manifest] section's
+# "path" variable.
+#
+# You are free to create your own manifest files and put them in any
+# repository you want, to create your own custom Zephyr installations.
+# For example, you could create a manifest file in your own out of
+# tree application directory, which would pull this zephyr repository
+# in as an ordinary project.
+#
+# You can pass your manifest repositories to west init when creating a
+# new Zephyr installation. See the west documentation for more
+# information.
+
+manifest:
+  defaults:
+    remote: zephyr
+
+  remotes:
+    - name: zephyr
+      url-base: https://github.com/zephyrproject-rtos
+
+  # Please add items below based on alphabetical order
+  projects:
+    - name: zephyr
+      revision: 118f1592ff5d04cdcb35d779c3e93575cfad71ae
+      clone-depth: 1
+      path: zephyr
+    
+  self:
+    path: reference_app
