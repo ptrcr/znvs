@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Build nvs reference application",
+            "command": "/usr/bin/bash ./scripts/build_reference_app.sh",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "type": "shell",
+            "label": "Run nvs reference application",
+            "command": "/usr/bin/bash ./scripts/run_reference_app.sh",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}
