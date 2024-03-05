@@ -9,5 +9,5 @@ endmacro()
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(nvs)
 
-target_sources(app PRIVATE ${ZEPHYR_BASE}/samples/subsys/nvs/src/main.c)
+target_sources(app PRIVATE main.c)
 target_include_directories(app PRIVATE ${ZEPHYR_BASE}/subsys/fs/nvs)

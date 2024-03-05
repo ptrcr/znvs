@@ -1,0 +1,1 @@
+flash read 0x1000 0xB00
