@@ -1,13 +1,17 @@
+import itertools
 import logging
 import struct
 from .entry import Entry
 from .exception import ValidationError
+from .util import batched
 
 logger = logging.getLogger(__name__)
 
 
 class Decoder:
     '''Class responsible for decoding binary NVS.'''
+
+    METADATA_ENTRY_SIZE = 8
 
     def __init__(self, nvs_size: int, sector_size: int):
         """Crate nvs decoder.
@@ -24,8 +28,22 @@ class Decoder:
     def safe_load(self, data: bytes):
         pass
 
-    def load(self, data: bytes):
-        pass
+    def load(self, data: bytes) -> list[Entry]:
+        if len(data) != self.nvs_size * self.sector_size:
+            raise ValidationError("Provided data does not match NVS layout configuration.")
+
+        metadata_offset = self.sector_size - 3 * Decoder.METADATA_ENTRY_SIZE
+        entries: dict[int, bytes] = {}
+
+        # TODO: Use proper sectors order
+        for sector in batched(data, self.sector_size):
+            entry = Decoder._deserialize_entry(data, metadata_offset)
+            while entry:
+                entries[entry.id] = entry.data
+                metadata_offset -= Decoder.METADATA_ENTRY_SIZE
+                entry = Decoder._deserialize_entry(data, metadata_offset)
+
+        return [Entry(id, data) for id, data in entries.items()]
 
     @staticmethod
     def _validate_crc():
