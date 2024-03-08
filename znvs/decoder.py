@@ -25,11 +25,8 @@ class Decoder:
         self.nvs_size = nvs_size
         self.sector_size = sector_size
 
-    def safe_load(self, data: bytes):
-        pass
-
     def load(self, data: bytes) -> list[Entry]:
-        if len(data) != self.nvs_size * self.sector_size:
+        if len(data) != self.nvs_size:
             raise ValidationError("Provided data does not match NVS layout configuration.")
 
         metadata_offset = self.sector_size - 3 * Decoder.METADATA_ENTRY_SIZE
@@ -39,7 +36,7 @@ class Decoder:
         for sector in batched(data, self.sector_size):
             entry = Decoder._deserialize_entry(data, metadata_offset)
             while entry:
-                entries[entry.id] = entry.data
+                entries[entry.id] = entry.value
                 metadata_offset -= Decoder.METADATA_ENTRY_SIZE
                 entry = Decoder._deserialize_entry(data, metadata_offset)
 
