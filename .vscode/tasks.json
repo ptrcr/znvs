@@ -4,7 +4,7 @@
         {
             "type": "shell",
             "label": "Build nvs reference application",
-            "command": "/usr/bin/bash ./scripts/build_reference_app.sh",
+            "command": "/usr/bin/bash ./script/build_reference_app.sh",
             "group": {
                 "kind": "build",
                 "isDefault": false
@@ -13,10 +13,19 @@
         {
             "type": "shell",
             "label": "Run nvs reference application",
-            "command": "/usr/bin/bash ./scripts/run_reference_app.sh",
+            "command": "/usr/bin/bash ./script/run_reference_app.sh",
             "group": {
                 "kind": "build",
                 "isDefault": false
+            }
+        },
+        {
+            "type": "shell",
+            "label": "Run nvs reference application",
+            "command": "/usr/bin/bash ./script/run_pytest.sh",
+            "group": {
+                "kind": "test",
+                "isDefault": true
             }
         }
     ]
