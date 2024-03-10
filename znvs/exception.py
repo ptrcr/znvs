@@ -3,6 +3,11 @@ class ZnvsException(Exception):
     pass
 
 
-class ValidationError(ZnvsException):
+class ParameterError(ZnvsException):
     '''Error raised when input parameters validation fails.'''
+    pass
+
+
+class ChecksumError(ZnvsException):
+    '''Error raised when NVS entry validation fails.'''
     pass
