@@ -21,7 +21,7 @@
         },
         {
             "type": "shell",
-            "label": "Run nvs reference application",
+            "label": "Run pytest",
             "command": "/usr/bin/bash ./script/run_pytest.sh",
             "group": {
                 "kind": "test",
