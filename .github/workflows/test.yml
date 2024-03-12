@@ -1,0 +1,10 @@
+name: 'Tests'
+run-name: ${{ github.actor }} tests
+on: [push]
+jobs:
+  Python-module-tests:
+    runs-on: python:3.10.13
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: bash ${{ github.workspace }}/znvs/script/run_pytest.sh
