@@ -48,6 +48,34 @@ static int init(const struct shell *shell_ptr)
     return 0;
 }
 
+static int cmd_read(const struct shell *shell_ptr, size_t argc, char *argv[])
+{
+    if (init(shell_ptr) < 0)
+    {
+        shell_error(shell_ptr, "NVS initialization failed");
+    }
+
+    uint32_t id = strtoul(argv[1], NULL, 16);
+    if (id > UINT16_MAX)
+    {
+        shell_error(shell_ptr, "Invalid id value");
+        return -ENOENT;
+    }
+    shell_info(shell_ptr, "Reading NVS item ID: %d", id);
+
+    ssize_t bytesRead = 0;
+    uint8_t bytes[CONFIG_SHELL_CMD_BUFF_SIZE / 2] = {0};
+    bytesRead = nvs_read(&fs, id, bytes, sizeof(bytes));
+    if (bytesRead < 0)
+    {
+        shell_error(shell_ptr, "Failed to read nvs: %d", (int)bytesRead);
+        return bytesRead;
+    }
+    
+    shell_hexdump(shell_ptr, bytes, bytesRead);
+    return 0;
+}
+
 static int cmd_write(const struct shell *shell_ptr, size_t argc, char *argv[])
 {
     if (init(shell_ptr) < 0)
@@ -90,6 +118,11 @@ static int cmd_write(const struct shell *shell_ptr, size_t argc, char *argv[])
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(nvs_cmds,
+                               SHELL_CMD_ARG(read, NULL,
+                                             "Read a specific nvs entry\n"
+                                             "Usage: settings read <id>\n"
+                                             "id type: hex",
+                                             cmd_read, 2, 0),
                                SHELL_CMD_ARG(write, NULL,
                                              "Write to a specific setting\n"
                                              "Usage: settings write <id> <value>\n"
