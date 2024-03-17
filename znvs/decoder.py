@@ -8,6 +8,62 @@ from .util import batched
 logger = logging.getLogger(__name__)
 
 
+class Ate:
+    _ATE_SIZE = 8
+    _CRC_CALCULATOR = Calculator(Configuration(width=8, polynomial=0x07, init_value=0xff))
+
+    def __init__(self, data, sector):
+        self.sector = sector
+        self.data_id, self.data_offset, self.data_length = struct.unpack_from("<HHH", data)
+        self.valid = Ate._validate_crc(data)
+
+    def data(self):
+        return self.sector[self.data_offset:self.data_offset + self.data_length]
+
+    def is_close(self):
+        return self.valid and self.data_id == 0xFFFF and self.data_length == 0
+
+    @staticmethod
+    def _validate_crc(allocation_table_entry: bytes) -> bool:
+        return 0 == Ate._CRC_CALCULATOR.checksum(allocation_table_entry)
+
+
+class Sector:
+    def __init__(self, data):
+        self.data = data
+
+    @property
+    def is_closed(self):
+        return Ate(self.data[-Ate._ATE_SIZE:]).is_close()
+
+
+class Sectors:
+    def __init__(self, data: bytes, sector_size: int):
+        self.sectors = [Sector(data[i:i + sector_size]) for i in range(0, len(data), sector_size)]
+        first_idx = None
+        last_idx = None
+        for idx in range(len(self.sectors)):
+            if self.sectors[idx].is_closed():
+                if last_idx is not None:
+                    first_idx = idx
+                    break
+                elif first_idx is None:
+                    first_idx = idx
+            else:
+                last_idx = idx if last_idx is None else last_idx
+
+        # sort sectors
+        self.sectors = self.sectors[first_idx:] + self.sectors[:first_idx]
+
+    def __iter__(self):
+        self.idx = 0
+        return self
+
+    def __next__(self):
+        for sector in self.sectors:
+            yield sector
+
+
 class Decoder:
     '''Class responsible for decoding binary NVS.'''
 
