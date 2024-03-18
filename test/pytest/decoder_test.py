@@ -3,8 +3,9 @@ from sample_descriptor import SampleDescriptor
 import os
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
-from znvs.decoder import Decoder
+from znvs.decoder import Decoder, Sectors
 from znvs.exception import ChecksumError
+from znvs.util import batched
 
 
 class TestDecoder(unittest.TestCase):
@@ -21,3 +22,24 @@ class TestDecoder(unittest.TestCase):
         modified = bytearray(descriptor.dump)
         modified[0x3EB] ^= 0x01
         self.assertRaises(ChecksumError, decoder.load, bytes(modified))
+
+    def test_sectors_iterator_00_01(self):
+        # First sector in flash layout is first nvs sector
+        for sample in ["sample_00", "sample_01"]:
+            descriptor = SampleDescriptor.load(sample)
+            expected_sectors = [descriptor.dump[0:descriptor.nvs.sector_size],
+                                descriptor.dump[descriptor.nvs.sector_size:2 * descriptor.nvs.sector_size],
+                                descriptor.dump[descriptor.nvs.sector_size*2:]]
+
+            for (expected, actual) in list(zip(expected_sectors, Sectors(descriptor.dump, descriptor.nvs.sector_size))):
+                self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")
+
+    def test_sectors_iterator_02(self):
+        # Last sector in flash layout is first nvs sector
+        descriptor = SampleDescriptor.load("sample_02")
+        first_sector_offset = descriptor.nvs.sector_size * (descriptor.nvs.sectors_num - 1)
+        expected_sectors = [descriptor.dump[first_sector_offset:], descriptor.dump[0:descriptor.nvs.sector_size],
+                            descriptor.dump[descriptor.nvs.sector_size:first_sector_offset]]
+
+        for (expected, actual) in list(zip(expected_sectors, Sectors(descriptor.dump, descriptor.nvs.sector_size))):
+            self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")

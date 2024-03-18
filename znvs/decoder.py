@@ -12,14 +12,15 @@ class Ate:
     _ATE_SIZE = 8
     _CRC_CALCULATOR = Calculator(Configuration(width=8, polynomial=0x07, init_value=0xff))
 
-    def __init__(self, data, sector):
+    def __init__(self, ate_data, sector):
         self.sector = sector
-        self.data_id, self.data_offset, self.data_length = struct.unpack_from("<HHH", data)
-        self.valid = Ate._validate_crc(data)
+        self.data_id, self.data_offset, self.data_length = struct.unpack_from("<HHH", ate_data)
+        self.valid = Ate._validate_crc(ate_data)
 
     def data(self):
         return self.sector[self.data_offset:self.data_offset + self.data_length]
 
+    @property
     def is_close(self):
         return self.valid and self.data_id == 0xFFFF and self.data_length == 0
 
@@ -34,7 +35,7 @@ class Sector:
 
     @property
     def is_closed(self):
-        return Ate(self.data[-Ate._ATE_SIZE:]).is_close()
+        return Ate(self.data[-Ate._ATE_SIZE:], self.data).is_close
 
 
 class Sectors:
@@ -43,7 +44,7 @@ class Sectors:
         first_idx = None
         last_idx = None
         for idx in range(len(self.sectors)):
-            if self.sectors[idx].is_closed():
+            if self.sectors[idx].is_closed:
                 if last_idx is not None:
                     first_idx = idx
                     break
@@ -60,8 +61,36 @@ class Sectors:
         return self
 
     def __next__(self):
+        if self.idx < len(self.sectors):
+            self.idx += 1
+            return self.sectors[self.idx - 1]
+        raise StopIteration
+
+
+class AteIterator:
+    _ATE_SIZE = 8
+
+    def __iter__(self, sectors):
+        self.sectors = sectors
         for sector in self.sectors:
-            yield sector
+            for ate_data in reversed(batched(self, sector, Ate._ATE_SIZE)):
+                ate = Ate(ate_data, sector)
+
+    @staticmethod
+    def _deserialize_ate(data, metadata_offset) -> Entry | None:
+        try:
+            # Each entry is 8 bytes
+            # 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7
+            # |   ID  | OFFS  |  LEN  | - |CRC|
+            nvs_id, offset, length = struct.unpack_from("<HHH", data, metadata_offset)
+            if nvs_id != 0xFFFF:
+                if not Decoder._validate_crc(data[metadata_offset: metadata_offset + Decoder._METADATA_ENTRY_SIZE]):
+                    raise ChecksumError(f"NVS contains entry ({nvs_id=}) which has invalid checksum")
+                return Entry(nvs_id, data[offset:offset + length])
+        except struct.error as exc:
+            logger.error(exc)
+
+        return None
 
 
 class Decoder:
