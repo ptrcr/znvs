@@ -115,16 +115,16 @@ class Decoder:
         if len(data) != self.nvs_size:
             raise ParameterError("Provided data does not match NVS layout configuration.")
 
-        metadata_offset = self.sector_size - 3 * Decoder._METADATA_ENTRY_SIZE
+        
         entries: dict[int, bytes] = {}
 
-        # TODO: Use proper sectors order
-        for sector in batched(data, self.sector_size):
-            entry = Decoder._deserialize_entry(data, metadata_offset)
+        for sector in Sectors(data, self.sector_size):
+            metadata_offset = self.sector_size - 3 * Decoder._METADATA_ENTRY_SIZE
+            entry = Decoder._deserialize_entry(sector.data, metadata_offset)
             while entry:
                 entries[entry.id] = entry.value
                 metadata_offset -= Decoder._METADATA_ENTRY_SIZE
-                entry = Decoder._deserialize_entry(data, metadata_offset)
+                entry = Decoder._deserialize_entry(sector.data, metadata_offset)
 
         return [Entry(id, data) for id, data in entries.items()]
 

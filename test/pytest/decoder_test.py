@@ -9,11 +9,20 @@ from znvs.util import batched
 
 
 class TestDecoder(unittest.TestCase):
-    def test_sample_decoding(self):
-        descriptor = SampleDescriptor.load("sample_00")
+    def _test_sample_decoding(self, sample_name: str):
+        descriptor = SampleDescriptor.load(sample_name)
         decoder = Decoder(descriptor.nvs.sector_size * descriptor.nvs.sectors_num, descriptor.nvs.sector_size)
         result = decoder.load(descriptor.dump)
         self.assertEqual(sorted(descriptor.items), sorted(result))
+
+    def test_simple_sample_decoding(self):
+        self._test_sample_decoding("sample_00")
+
+    def test_sample_decoding_two_consecutive_sectors_occupied(self):
+        self._test_sample_decoding("sample_01")
+
+    def test_sample_decoding_first_nvs_sector_not_at_the_beginning(self):
+        self._test_sample_decoding("sample_02")
 
     def test_crc_validation(self):
         descriptor = SampleDescriptor.load("sample_00")
