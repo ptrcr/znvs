@@ -71,7 +71,7 @@ static int cmd_read(const struct shell *shell_ptr, size_t argc, char *argv[])
         shell_error(shell_ptr, "Failed to read nvs: %d", (int)bytesRead);
         return bytesRead;
     }
-    
+
     shell_hexdump(shell_ptr, bytes, bytesRead);
     return 0;
 }
@@ -101,7 +101,7 @@ static int cmd_write(const struct shell *shell_ptr, size_t argc, char *argv[])
     }
 
     shell_info(shell_ptr, "Writing NVS item ID: %d", id);
-    
+
     ssize_t bytesWritten = 0;
     bytesWritten = nvs_write(&fs, id, bytes, bytes_len);
 
@@ -117,18 +117,46 @@ static int cmd_write(const struct shell *shell_ptr, size_t argc, char *argv[])
     }
 }
 
+static int cmd_delete(const struct shell *shell_ptr, size_t argc, char *argv[])
+{
+    if (init(shell_ptr) < 0)
+    {
+        shell_error(shell_ptr, "NVS initialization failed");
+    }
+
+    uint32_t id = strtoul(argv[1], NULL, 16);
+    if (id > UINT16_MAX)
+    {
+        shell_error(shell_ptr, "Invalid id value");
+        return -ENOENT;
+    }
+    int ret = nvs_delete(&fs, id);
+    if (ret < 0)
+    {
+        shell_error(shell_ptr, "Failed to delete item from nvs: %d", (int)ret);
+        return ret;
+    }
+    shell_info(shell_ptr, "Deleted NVS item ID: %d", id);
+    return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(nvs_cmds,
                                SHELL_CMD_ARG(read, NULL,
                                              "Read a specific nvs entry\n"
-                                             "Usage: settings read <id>\n"
+                                             "Usage: nvs read <id>\n"
                                              "id type: hex",
                                              cmd_read, 2, 0),
                                SHELL_CMD_ARG(write, NULL,
-                                             "Write to a specific setting\n"
-                                             "Usage: settings write <id> <value>\n"
+                                             "Write a specific nvs entry\n"
+                                             "Usage: nvs write <id> <value>\n"
                                              "id type: hex\n"
                                              "value type: hex",
                                              cmd_write, 3, 0),
+                               SHELL_CMD_ARG(delete, NULL,
+                                             "Delete a specific nvs entry\n"
+                                             "Usage: nvs delete <id>\n"
+                                             "id type: hex\n",
+                                             cmd_delete, 2, 0),
                                SHELL_SUBCMD_SET_END);
 
 static int cmd_nvs(const struct shell *shell_ptr, size_t argc, char **argv)
