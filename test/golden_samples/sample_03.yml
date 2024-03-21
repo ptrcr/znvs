@@ -1,0 +1,13 @@
+# Sample created if following way:
+# - write item 1
+# - write item 2
+# - delete item 2
+# - modify item 1
+nvs:
+  sector_size: 0x400
+  sectors_num: 3
+content:
+  - item:
+      id: 1
+      hex_value: "11223344"
+dump: sample_03.bin
