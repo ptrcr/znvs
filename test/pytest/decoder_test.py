@@ -24,6 +24,9 @@ class TestDecoder(unittest.TestCase):
     def test_sample_decoding_first_nvs_sector_not_at_the_beginning(self):
         self._test_sample_decoding("sample_02")
 
+    def test_sample_decoding_deleted_item(self):
+        self._test_sample_decoding("sample_03")
+
     def test_crc_validation(self):
         descriptor = SampleDescriptor.load("sample_00")
         decoder = Decoder(descriptor.nvs.sector_size * descriptor.nvs.sectors_num, descriptor.nvs.sector_size)

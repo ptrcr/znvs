@@ -126,7 +126,7 @@ class Decoder:
                 metadata_offset -= Decoder._METADATA_ENTRY_SIZE
                 entry = Decoder._deserialize_entry(sector.data, metadata_offset)
 
-        return [Entry(id, data) for id, data in entries.items()]
+        return [Entry(id, data) for id, data in entries.items() if data is not None]
 
     @staticmethod
     def _validate_crc(allocation_table_entry: bytes) -> bool:
@@ -142,7 +142,7 @@ class Decoder:
             if nvs_id != 0xFFFF:
                 if not Decoder._validate_crc(data[metadata_offset: metadata_offset + Decoder._METADATA_ENTRY_SIZE]):
                     raise ChecksumError(f"NVS contains entry ({nvs_id=}) which has invalid checksum")
-                return Entry(nvs_id, data[offset:offset + length])
+                return Entry(nvs_id, data[offset:offset + length] if length > 0 else None)
         except struct.error as exc:
             logger.error(exc)
 
