@@ -3,7 +3,7 @@ from sample_descriptor import SampleDescriptor
 import os
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
-from znvs.decoder import Decoder, Sectors
+from znvs.decoder import Decoder, Sectors, Ate
 from znvs.exception import ChecksumError
 from znvs.util import batched
 
@@ -55,3 +55,21 @@ class TestDecoder(unittest.TestCase):
 
         for (expected, actual) in list(zip(expected_sectors, Sectors(descriptor.dump, descriptor.nvs.sector_size))):
             self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")
+
+    def test_ate_decoder(self):
+        descriptor = SampleDescriptor.load("sample_00")
+        sector = descriptor.dump[:0x400]
+
+        gc_ate = Ate.from_data(sector[0x400-16:-8], sector)
+        self.assertTrue(gc_ate.is_gc_done)
+
+        data_ate = Ate.from_data(sector[0x400-24:-16], sector)
+        self.assertEqual(descriptor.items[0].id, data_ate.data_id)
+        self.assertEqual(descriptor.items[0].value, data_ate.data)
+
+    def test_ate_decoder_close_ate(self):
+        descriptor = SampleDescriptor.load("sample_02")
+        sector = descriptor.dump[0x800:]
+
+        done_ate = Ate.from_data(sector[0x400-8:], sector)
+        self.assertTrue(done_ate.is_close)

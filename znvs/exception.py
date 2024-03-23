@@ -11,3 +11,8 @@ class ParameterError(ZnvsException):
 class ChecksumError(ZnvsException):
     '''Error raised when NVS entry validation fails.'''
     pass
+
+
+class DecodingError(ZnvsException):
+    '''NVS decoding error'''
+    pass
