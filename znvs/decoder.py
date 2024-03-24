@@ -18,6 +18,12 @@ class Ate:
         self.sector_offset = sector_offset
         self.data = data
 
+    def get_entry(self) -> Entry | None:
+        '''Returns Entry if Ate is not special kind (close of gc)'''
+        if self.is_close or self.is_gc_done:
+            return None
+        return Entry(self.data_id, self.data)
+
     @property
     def is_close(self):
         return self.data_id == 0xFFFF and self.data is None and self.sector_offset != 0x00
@@ -57,40 +63,27 @@ class Sector:
 class AteIterator:
     def __init__(self, sector: Sector):
         self.sector = sector
-        self.ates = batched(sector.data, Ate._SIZE)[::-1]
+        self.ates = [bytes(a) for a in batched(sector.data, Ate._SIZE)][::-1]
 
         # GC done ate
-        gc_done = self._deserialize_ate(self.sector.data, self.ates[1])
-        if gc_done is None or gc_done != Entry(0xFFFF, b''):
+        gc_done = Ate.from_data(self.ates[1], self.sector.data)
+        if gc_done is None or not gc_done.is_gc_done:
             raise DecodingError("Could not find valid garbage collection done ATE")
 
     def __iter__(self):
         self.idx = 2  # skip close_ate and gc_done ate
         return self
 
-    def __next__(self):
+    def __next__(self) -> Ate:
         try:
             ate = Ate.from_data(self.sector.data, self.ates[self.idx])
             self.idx += 1
             return ate
-        except ChecksumError as exc:
+        except ChecksumError as _:
             raise StopIteration
 
-    @staticmethod
-    def _deserialize_ate(data, metadata_offset) -> Entry | None:
-        try:
-            nvs_id, offset, length = struct.unpack_from("<HHH", data, metadata_offset)
-            if nvs_id != 0xFFFF:
-                if not Decoder._validate_crc(data[metadata_offset: metadata_offset + Decoder._METADATA_ENTRY_SIZE]):
-                    raise ChecksumError(f"NVS contains entry ({nvs_id=}) which has invalid checksum")
-                return Entry(nvs_id, data[offset:offset + length] if length > 0 else None)
-        except struct.error as exc:
-            logger.error(exc)
 
-        return None
-
-
-class Sectors:
+class SectorIterator:
     def __init__(self, data: bytes, sector_size: int):
         self.sectors = [Sector(data[i:i + sector_size]) for i in range(0, len(data), sector_size)]
         first_idx = None
@@ -113,7 +106,7 @@ class Sectors:
         self.idx = 0
         return self
 
-    def __next__(self):
+    def __next__(self) -> Sector:
         if self.idx < len(self.sectors):
             self.idx += 1
             return self.sectors[self.idx - 1]
@@ -144,7 +137,7 @@ class Decoder:
 
         entries: dict[int, bytes] = {}
 
-        for sector in Sectors(data, self.sector_size):
+        for sector in SectorIterator(data, self.sector_size):
             metadata_offset = self.sector_size - 3 * Decoder._METADATA_ENTRY_SIZE
             entry = Decoder._deserialize_entry(sector.data, metadata_offset)
             while entry:

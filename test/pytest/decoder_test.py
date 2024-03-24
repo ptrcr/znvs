@@ -3,7 +3,7 @@ from sample_descriptor import SampleDescriptor
 import os
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
-from znvs.decoder import Decoder, Sectors, Ate
+from znvs.decoder import Decoder, Sector, SectorIterator, Ate, AteIterator
 from znvs.exception import ChecksumError
 from znvs.util import batched
 
@@ -43,7 +43,7 @@ class TestDecoder(unittest.TestCase):
                                 descriptor.dump[descriptor.nvs.sector_size:2 * descriptor.nvs.sector_size],
                                 descriptor.dump[descriptor.nvs.sector_size*2:]]
 
-            for (expected, actual) in list(zip(expected_sectors, Sectors(descriptor.dump, descriptor.nvs.sector_size))):
+            for (expected, actual) in list(zip(expected_sectors, SectorIterator(descriptor.dump, descriptor.nvs.sector_size))):
                 self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")
 
     def test_sectors_iterator_02(self):
@@ -53,7 +53,7 @@ class TestDecoder(unittest.TestCase):
         expected_sectors = [descriptor.dump[first_sector_offset:], descriptor.dump[0:descriptor.nvs.sector_size],
                             descriptor.dump[descriptor.nvs.sector_size:first_sector_offset]]
 
-        for (expected, actual) in list(zip(expected_sectors, Sectors(descriptor.dump, descriptor.nvs.sector_size))):
+        for (expected, actual) in list(zip(expected_sectors, SectorIterator(descriptor.dump, descriptor.nvs.sector_size))):
             self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")
 
     def test_ate_decoder(self):
@@ -73,3 +73,12 @@ class TestDecoder(unittest.TestCase):
 
         done_ate = Ate.from_data(sector[0x400-8:], sector)
         self.assertTrue(done_ate.is_close)
+
+    def test_ate_iterator(self):
+        descriptor = SampleDescriptor.load("sample_00")
+        
+        sector_0 = descriptor.dump[:0x400]
+        for ate in AteIterator(Sector(sector_0)):
+            print(ate)
+        for (expected, actual) in list(zip(descriptor.items, AteIterator(Sector(sector_0)))):
+            self.assertEqual(expected, actual.get_entry(), f"\n{expected=}\n{actual.data=}")
