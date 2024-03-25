@@ -37,7 +37,9 @@ class Ate:
         return 0 == Ate._CRC_CALCULATOR.checksum(allocation_table_entry)
 
     @staticmethod
-    def from_data(ate_data: bytes, sector_data: bytes) -> Ate:
+    def from_data(ate_data: bytes, sector_data: bytes) -> Ate | None:
+        if ate_data == bytes.fromhex("FFFFFFFFFFFFFFFF"):
+            return None
 
         # Each entry is 8 bytes
         # 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7
@@ -64,22 +66,29 @@ class AteIterator:
     def __init__(self, sector: Sector):
         self.sector = sector
         self.ates = [bytes(a) for a in batched(sector.data, Ate._SIZE)][::-1]
+        self.sector_valid = True
 
-        # GC done ate
-        gc_done = Ate.from_data(self.ates[1], self.sector.data)
-        if gc_done is None or not gc_done.is_gc_done:
-            raise DecodingError("Could not find valid garbage collection done ATE")
+        try:
+            # GC done ate
+            gc_done = Ate.from_data(self.ates[1], self.sector.data)
+            if gc_done is None or not gc_done.is_gc_done:
+                self.sector_valid = False
+        except ChecksumError as _:
+            self.sector_valid = False
 
     def __iter__(self):
         self.idx = 2  # skip close_ate and gc_done ate
         return self
 
     def __next__(self) -> Ate:
-        try:
-            ate = Ate.from_data(self.sector.data, self.ates[self.idx])
+        if not self.sector_valid:
+            raise StopIteration
+
+        ate = Ate.from_data(self.ates[self.idx], self.sector.data)
+        if ate:
             self.idx += 1
             return ate
-        except ChecksumError as _:
+        else:
             raise StopIteration
 
 
@@ -138,12 +147,9 @@ class Decoder:
         entries: dict[int, bytes] = {}
 
         for sector in SectorIterator(data, self.sector_size):
-            metadata_offset = self.sector_size - 3 * Decoder._METADATA_ENTRY_SIZE
-            entry = Decoder._deserialize_entry(sector.data, metadata_offset)
-            while entry:
+            for ate in AteIterator(sector):
+                entry = ate.get_entry()
                 entries[entry.id] = entry.value
-                metadata_offset -= Decoder._METADATA_ENTRY_SIZE
-                entry = Decoder._deserialize_entry(sector.data, metadata_offset)
 
         return [Entry(id, data) for id, data in entries.items() if data is not None]
 

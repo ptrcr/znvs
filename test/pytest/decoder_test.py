@@ -78,7 +78,5 @@ class TestDecoder(unittest.TestCase):
         descriptor = SampleDescriptor.load("sample_00")
         
         sector_0 = descriptor.dump[:0x400]
-        for ate in AteIterator(Sector(sector_0)):
-            print(ate)
         for (expected, actual) in list(zip(descriptor.items, AteIterator(Sector(sector_0)))):
             self.assertEqual(expected, actual.get_entry(), f"\n{expected=}\n{actual.data=}")
