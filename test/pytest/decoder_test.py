@@ -3,7 +3,7 @@ from sample_descriptor import SampleDescriptor
 import os
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
-from znvs.decoder import Decoder, Sector, SectorIterator, Ate, AteIterator
+from znvs.decoder import Decoder, Nvs, Sector, Ate
 from znvs.exception import ChecksumError
 from znvs.util import batched
 
@@ -43,7 +43,7 @@ class TestDecoder(unittest.TestCase):
                                 descriptor.dump[descriptor.nvs.sector_size:2 * descriptor.nvs.sector_size],
                                 descriptor.dump[descriptor.nvs.sector_size*2:]]
 
-            for (expected, actual) in list(zip(expected_sectors, SectorIterator(descriptor.dump, descriptor.nvs.sector_size))):
+            for (expected, actual) in list(zip(expected_sectors, Nvs(descriptor.dump, descriptor.nvs.sector_size))):
                 self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")
 
     def test_sectors_iterator_02(self):
@@ -53,7 +53,7 @@ class TestDecoder(unittest.TestCase):
         expected_sectors = [descriptor.dump[first_sector_offset:], descriptor.dump[0:descriptor.nvs.sector_size],
                             descriptor.dump[descriptor.nvs.sector_size:first_sector_offset]]
 
-        for (expected, actual) in list(zip(expected_sectors, SectorIterator(descriptor.dump, descriptor.nvs.sector_size))):
+        for (expected, actual) in list(zip(expected_sectors, Nvs(descriptor.dump, descriptor.nvs.sector_size))):
             self.assertEqual(expected, actual.data, f"\n{expected=}\n{actual.data=}")
 
     def test_ate_decoder(self):
@@ -78,5 +78,5 @@ class TestDecoder(unittest.TestCase):
         descriptor = SampleDescriptor.load("sample_00")
         
         sector_0 = descriptor.dump[:0x400]
-        for (expected, actual) in list(zip(descriptor.items, AteIterator(Sector(sector_0)))):
+        for (expected, actual) in list(zip(descriptor.items, iter(Sector(sector_0)))):
             self.assertEqual(expected, actual.get_entry(), f"\n{expected=}\n{actual.data=}")

@@ -51,8 +51,18 @@ class Ate:
 
 
 class Sector:
-    def __init__(self, data):
+    def __init__(self, data: bytes):
         self.data = data
+        self.ates = [bytes(a) for a in batched(self.data, Ate._SIZE)][::-1]
+        self.sector_valid = True
+
+        try:
+            # GC done ate
+            gc_done = Ate.from_data(self.ates[1], self.data)
+            if gc_done is None or not gc_done.is_gc_done:
+                self.sector_valid = False
+        except ChecksumError as _:
+            self.sector_valid = False
 
     @property
     def is_closed(self):
@@ -60,21 +70,6 @@ class Sector:
             return Ate.from_data(self.data[-Ate._SIZE:], self.data).is_close
         except:
             return False
-
-
-class AteIterator:
-    def __init__(self, sector: Sector):
-        self.sector = sector
-        self.ates = [bytes(a) for a in batched(sector.data, Ate._SIZE)][::-1]
-        self.sector_valid = True
-
-        try:
-            # GC done ate
-            gc_done = Ate.from_data(self.ates[1], self.sector.data)
-            if gc_done is None or not gc_done.is_gc_done:
-                self.sector_valid = False
-        except ChecksumError as _:
-            self.sector_valid = False
 
     def __iter__(self):
         self.idx = 2  # skip close_ate and gc_done ate
@@ -84,7 +79,7 @@ class AteIterator:
         if not self.sector_valid:
             raise StopIteration
 
-        ate = Ate.from_data(self.ates[self.idx], self.sector.data)
+        ate = Ate.from_data(self.ates[self.idx], self.data)
         if ate:
             self.idx += 1
             return ate
@@ -92,7 +87,7 @@ class AteIterator:
             raise StopIteration
 
 
-class SectorIterator:
+class Nvs:
     def __init__(self, data: bytes, sector_size: int):
         self.sectors = [Sector(data[i:i + sector_size]) for i in range(0, len(data), sector_size)]
         first_idx = None
@@ -125,9 +120,6 @@ class SectorIterator:
 class Decoder:
     '''Class responsible for decoding binary NVS.'''
 
-    _METADATA_ENTRY_SIZE = 8
-    _CRC_CALCULATOR = Calculator(Configuration(width=8, polynomial=0x07, init_value=0xff))
-
     def __init__(self, nvs_size: int, sector_size: int):
         """Crate nvs decoder.
 
@@ -146,29 +138,9 @@ class Decoder:
 
         entries: dict[int, bytes] = {}
 
-        for sector in SectorIterator(data, self.sector_size):
-            for ate in AteIterator(sector):
+        for sector in Nvs(data, self.sector_size):
+            for ate in sector:
                 entry = ate.get_entry()
                 entries[entry.id] = entry.value
 
         return [Entry(id, data) for id, data in entries.items() if data is not None]
-
-    @staticmethod
-    def _validate_crc(allocation_table_entry: bytes) -> bool:
-        return 0 == Decoder._CRC_CALCULATOR.checksum(allocation_table_entry)
-
-    @staticmethod
-    def _deserialize_entry(data, metadata_offset) -> Entry | None:
-        try:
-            # Each entry is 8 bytes
-            # 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7
-            # |   ID  | OFFS  |  LEN  | - |CRC|
-            nvs_id, offset, length = struct.unpack_from("<HHH", data, metadata_offset)
-            if nvs_id != 0xFFFF:
-                if not Decoder._validate_crc(data[metadata_offset: metadata_offset + Decoder._METADATA_ENTRY_SIZE]):
-                    raise ChecksumError(f"NVS contains entry ({nvs_id=}) which has invalid checksum")
-                return Entry(nvs_id, data[offset:offset + length] if length > 0 else None)
-        except struct.error as exc:
-            logger.error(exc)
-
-        return None
