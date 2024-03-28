@@ -9,21 +9,17 @@ logger = logging.getLogger(__name__)
 class Decoder:
     '''Class responsible for decoding binary NVS.'''
 
-    def __init__(self, nvs_size: int, sector_size: int):
+    def __init__(self, sector_size: int):
         """Crate nvs decoder.
 
         Arguments:
-        nvs_size -- size of whole NVS
         sector_size -- size of single NVS sector
         """
-        if not nvs_size % sector_size == 0:
-            raise ParameterError("NVS size must be a multiplicity of sector_size.")
-        self.nvs_size = nvs_size
         self.sector_size = sector_size
 
     def load(self, data: bytes) -> list[Entry]:
-        if len(data) != self.nvs_size:
-            raise ParameterError("Provided data does not match NVS layout configuration.")
+        if not len(data) % self.sector_size == 0:
+            raise ParameterError("NVS size must be a multiplicity of sector_size.")
 
         entries: dict[int, bytes] = {}
 

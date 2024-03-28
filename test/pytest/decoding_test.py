@@ -14,7 +14,7 @@ from znvs.sector import Sector
 class TestDecoder(unittest.TestCase):
     def _test_sample_decoding(self, sample_name: str):
         descriptor = SampleDescriptor.load(sample_name)
-        decoder = Decoder(descriptor.nvs.sector_size * descriptor.nvs.sectors_num, descriptor.nvs.sector_size)
+        decoder = Decoder(descriptor.nvs.sector_size)
         result = decoder.load(descriptor.dump)
         self.assertEqual(sorted(descriptor.items), sorted(result))
 
@@ -32,7 +32,7 @@ class TestDecoder(unittest.TestCase):
 
     def test_crc_validation(self):
         descriptor = SampleDescriptor.load("sample_00")
-        decoder = Decoder(descriptor.nvs.sector_size * descriptor.nvs.sectors_num, descriptor.nvs.sector_size)
+        decoder = Decoder(descriptor.nvs.sector_size)
         # Modify one bit at the second entry
         modified = bytearray(descriptor.dump)
         modified[0x3EB] ^= 0x01
