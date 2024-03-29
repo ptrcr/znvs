@@ -1,18 +1,16 @@
 
 from .ate import Ate
 from .exception import ChecksumError
-from .util import batched
 
 
 class Sector:
     def __init__(self, data: bytes):
         self.data = data
-        self.ates = [bytes(a) for a in batched(self.data, Ate._SIZE)][::-1]
         self.sector_valid = True
 
         try:
             # GC done ate
-            gc_done = Ate.from_data(self.ates[1], self.data)
+            gc_done = Ate.from_bytes(len(self.data) - Ate._SIZE*2, self.data)
             if gc_done is None or not gc_done.is_gc_done:
                 self.sector_valid = False
         except ChecksumError as _:
@@ -21,7 +19,7 @@ class Sector:
     @property
     def is_closed(self):
         try:
-            return Ate.from_data(self.data[-Ate._SIZE:], self.data).is_close
+            return Ate.from_bytes(len(self.data) - Ate._SIZE, self.data).is_close
         except:
             return False
 
@@ -33,9 +31,15 @@ class Sector:
         if not self.sector_valid:
             raise StopIteration
 
-        ate = Ate.from_data(self.ates[self.idx], self.data)
+        ate = Ate.from_bytes(len(self.data) - Ate._SIZE * (self.idx + 1), self.data)
         if ate:
             self.idx += 1
             return ate
         else:
             raise StopIteration
+
+
+class SectorBuilder:
+    def __init__(self, sector_size):
+        self.sector_size = sector_size
+        sector_data = b'\xff' * self.sector_size

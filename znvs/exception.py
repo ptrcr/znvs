@@ -16,3 +16,7 @@ class ChecksumError(ZnvsException):
 class DecodingError(ZnvsException):
     '''NVS decoding error'''
     pass
+
+class EncodingError(ZnvsException):
+    '''NVS encoding error'''
+    pass
