@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+import math
 import struct
 from crc import Calculator, Configuration
 from .entry import Entry
@@ -34,6 +35,10 @@ class Ate:
     def is_gc_done(self):
         return self.data_id == 0xFFFF and self.data is None and self.data_offset == 0x00
 
+    @property
+    def aligned_data_size(self):
+        return Ate._DATA_ALIGNMENT * math.ceil(len(self.data)/Ate._DATA_ALIGNMENT)
+
     @staticmethod
     def _calc_crc(allocation_table_entry: bytes) -> int:
         return Ate._CRC_CALCULATOR.checksum(allocation_table_entry)
@@ -43,12 +48,11 @@ class Ate:
         return 0 == Ate._calc_crc(allocation_table_entry)
 
     def to_bytes(self, sector_data: bytearray):
-        aligned_data_size = Ate._DATA_ALIGNMENT * round(len(self.data)/Ate._DATA_ALIGNMENT)
-        if self.data_offset + aligned_data_size > self.ate_offset:
+        if self.data_offset + self.aligned_data_size > self.ate_offset:
             raise EncodingError("Data do not fit into sector")
 
         if sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] != b'\xFF' * Ate._SIZE or \
-                sector_data[self.data_offset:self.data_offset + aligned_data_size] != b'\xFF' * aligned_data_size:
+                sector_data[self.data_offset:self.data_offset + self.aligned_data_size] != b'\xFF' * self.aligned_data_size:
             raise EncodingError("Data not erased")
 
         ate = struct.pack("<HHHB", self.data_id, self.data_offset, len(self.data), 0xFF)

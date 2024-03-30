@@ -37,6 +37,9 @@ class TestDecoder(unittest.TestCase):
     def test_ate_encoder(self):
         sector = bytearray.fromhex("FF") * 32
         ate = Ate(24, 2, bytes.fromhex("AABBCCDDEE"), 8)
+        self.assertEqual(ate.data, bytes.fromhex("AABBCCDDEE"))
+        self.assertEqual(8, ate.aligned_data_size)
+        
         ate.to_bytes(sector)
         self.assertEqual(bytes(sector[:-1]), bytes.fromhex("FFFFFFFFFFFFFFFFAABBCCDDEEFFFFFFFFFFFFFFFFFFFFFF020008000500FF"))
         Ate._validate_crc(sector[24:])
