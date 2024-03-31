@@ -39,14 +39,6 @@ class Ate:
     def aligned_data_size(self):
         return Ate._DATA_ALIGNMENT * math.ceil(len(self.data)/Ate._DATA_ALIGNMENT)
 
-    @staticmethod
-    def _calc_crc(allocation_table_entry: bytes) -> int:
-        return Ate._CRC_CALCULATOR.checksum(allocation_table_entry)
-
-    @staticmethod
-    def _validate_crc(allocation_table_entry: bytes) -> bool:
-        return 0 == Ate._calc_crc(allocation_table_entry)
-
     def to_bytes(self, sector_data: bytearray):
         if self.data_offset + self.aligned_data_size > self.ate_offset:
             raise EncodingError("Data do not fit into sector")
@@ -59,6 +51,14 @@ class Ate:
         ate += Ate._calc_crc(ate).to_bytes(1, 'little')
         sector_data[self.data_offset:self.data_offset + len(self.data)] = self.data
         sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] = ate
+
+    @staticmethod
+    def _calc_crc(allocation_table_entry: bytes) -> int:
+        return Ate._CRC_CALCULATOR.checksum(allocation_table_entry)
+
+    @staticmethod
+    def _validate_crc(allocation_table_entry: bytes) -> bool:
+        return 0 == Ate._calc_crc(allocation_table_entry)
 
     @staticmethod
     def from_bytes(ate_offset: int, sector_data: bytes) -> Ate | None:

@@ -5,6 +5,7 @@ import os
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
 from znvs.ate import Ate
+from znvs.exception import EncodingError
 from znvs.sector import Sector
 
 
@@ -43,3 +44,8 @@ class TestDecoder(unittest.TestCase):
         ate.to_bytes(sector)
         self.assertEqual(bytes(sector[:-1]), bytes.fromhex("FFFFFFFFFFFFFFFFAABBCCDDEEFFFFFFFFFFFFFFFFFFFFFF020008000500FF"))
         Ate._validate_crc(sector[24:])
+
+    def test_ate_encoder_no_space(self):
+        sector = bytearray.fromhex("FF") * 32
+        ate = Ate(24, 2, bytes.fromhex("AABBCCDDEE"), 20)
+        self.assertRaises(EncodingError, ate.to_bytes, sector)
