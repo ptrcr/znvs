@@ -12,7 +12,7 @@ class Ate:
     _DATA_ALIGNMENT = 4
     _CRC_CALCULATOR = Calculator(Configuration(width=8, polynomial=0x07, init_value=0xff))
 
-    def __init__(self, ate_offset, data_id, data, data_offset):
+    def __init__(self, ate_offset: int, data_id: int, data: bytes, data_offset: int):
         if data_offset % Ate._DATA_ALIGNMENT or ate_offset % Ate._DATA_ALIGNMENT:
             raise ParameterError("Offset not aligned")
 
@@ -41,16 +41,19 @@ class Ate:
 
     def to_bytes(self, sector_data: bytearray):
         if self.data_offset + self.aligned_data_size > self.ate_offset:
-            raise EncodingError("Data do not fit into sector")
+            raise EncodingError("Data does not fit into sector")
 
         if sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] != b'\xFF' * Ate._SIZE or \
                 sector_data[self.data_offset:self.data_offset + self.aligned_data_size] != b'\xFF' * self.aligned_data_size:
-            raise EncodingError("Data not erased")
+            raise EncodingError("Memory not empty")
 
         ate = struct.pack("<HHHB", self.data_id, self.data_offset, len(self.data), 0xFF)
         ate += Ate._calc_crc(ate).to_bytes(1, 'little')
         sector_data[self.data_offset:self.data_offset + len(self.data)] = self.data
         sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] = ate
+
+    def next(self, data_id: int, data: bytes) -> Ate:
+        return Ate(self.ate_offset - Ate._SIZE, data_id, data, self.data_offset + self.aligned_data_size)
 
     @staticmethod
     def _calc_crc(allocation_table_entry: bytes) -> int:
