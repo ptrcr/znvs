@@ -28,6 +28,10 @@ class Ate:
         return Entry(self.data_id, self.data)
 
     @property
+    def data_len(self):
+        return 0 if self.data is None else len(self.data)
+
+    @property
     def is_close(self):
         return self.data_id == 0xFFFF and self.data is None and self.data_offset != 0x00
 
@@ -37,7 +41,7 @@ class Ate:
 
     @property
     def aligned_data_size(self):
-        return Ate._DATA_ALIGNMENT * math.ceil(len(self.data)/Ate._DATA_ALIGNMENT)
+        return Ate._DATA_ALIGNMENT * math.ceil(self.data_len/Ate._DATA_ALIGNMENT)
 
     def to_bytes(self, sector_data: bytearray):
         if self.data_offset + self.aligned_data_size > self.ate_offset:
@@ -47,9 +51,9 @@ class Ate:
                 sector_data[self.data_offset:self.data_offset + self.aligned_data_size] != b'\xFF' * self.aligned_data_size:
             raise EncodingError("Memory not empty")
 
-        ate = struct.pack("<HHHB", self.data_id, self.data_offset, len(self.data), 0xFF)
+        ate = struct.pack("<HHHB", self.data_id, self.data_offset, self.data_len, 0xFF)
         ate += Ate._calc_crc(ate).to_bytes(1, 'little')
-        sector_data[self.data_offset:self.data_offset + len(self.data)] = self.data
+        sector_data[self.data_offset:self.data_offset + self.data_len] = self.data
         sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] = ate
 
     def next(self, data_id: int, data: bytes) -> Ate:
