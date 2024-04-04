@@ -53,7 +53,8 @@ class Ate:
 
         ate = struct.pack("<HHHB", self.data_id, self.data_offset, self.data_len, 0xFF)
         ate += Ate._calc_crc(ate).to_bytes(1, 'little')
-        sector_data[self.data_offset:self.data_offset + self.data_len] = self.data
+        if self.data_len:
+            sector_data[self.data_offset:self.data_offset + self.data_len] = self.data
         sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] = ate
 
     def next(self, data_id: int, data: bytes) -> Ate:

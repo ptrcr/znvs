@@ -1,7 +1,6 @@
 from .ate import Ate
 from .nvs import Nvs
 from .entry import Entry
-from .exception import EncodingError
 from .sector import SectorBuilder
 import logging
 

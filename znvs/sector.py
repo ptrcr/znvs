@@ -59,5 +59,8 @@ class SectorBuilder:
             # TODO: close ate
             return False
 
+    def get(self) -> Sector:
+        return Sector(self.data)
+
     def get_bytes(self) -> bytes:
         return bytes(self.data)

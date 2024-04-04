@@ -4,7 +4,6 @@ import os
 
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
-from znvs.ate import Ate
 from znvs.decoder import Decoder
 from znvs.exception import ChecksumError
 from znvs.nvs import Nvs

@@ -9,7 +9,7 @@ from znvs.exception import EncodingError
 from znvs.sector import Sector
 
 
-class TestDecoder(unittest.TestCase):
+class TestAte(unittest.TestCase):
     def test_ate_decoder(self):
         descriptor = SampleDescriptor.load("sample_00")
         sector = descriptor.dump[:0x400]
@@ -78,7 +78,7 @@ class TestDecoder(unittest.TestCase):
         self.assertTrue(Ate._validate_crc(sector[ate2.ate_offset:ate1.ate_offset]))
 
         item3_id = 4
-        ate3 = ate2.next(item2_id, bytes.fromhex("A1A2"))
+        ate3 = ate2.next(item3_id, bytes.fromhex("A1A2"))
         self.assertRaises(EncodingError, ate3.to_bytes, sector)
 
         # ensure sector data has not been modified
