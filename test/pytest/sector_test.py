@@ -22,3 +22,12 @@ class TestSector(unittest.TestCase):
         for expected, actual in zip(entries, builder.get()):
             self.assertEqual(expected.id, actual.data_id)
             self.assertEqual(expected.value, actual.data)
+
+    def test_sector_encoder_not_enough_space(self):
+        entries = [Entry(2, bytes.fromhex("AABBCC")), Entry(0xABCD, bytes.fromhex("112233445566"))]
+        builder = SectorBuilder(40)
+        self.assertTrue(builder.add(entries.pop(0)))
+        self.assertFalse(builder.add(entries.pop(0)))
+
+        self.assertEqual(bytes.fromhex(
+            "AABBCCFFFFFFFFFFFFFFFFFFFFFFFFFF020000000300FFB3FFFF00000000FF5CFFFFFFFFFFFFFFFF"), builder.get_bytes())
