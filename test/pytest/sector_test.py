@@ -15,13 +15,19 @@ class TestSector(unittest.TestCase):
             self.assertTrue(builder.add(entry))
 
         encoded = builder.get_bytes()
-        print(encoded.hex())
         self.assertEqual(bytes.fromhex(
             "AABBCCFF112233445566FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCDAB04000600FF29020000000300FFB3FFFF00000000FF5CFFFFFFFFFFFFFFFF"), encoded)
 
         for expected, actual in zip(entries, builder.get()):
             self.assertEqual(expected.id, actual.data_id)
             self.assertEqual(expected.value, actual.data)
+
+        # Close sector
+        builder.close()
+        encoded = builder.get_bytes()
+        self.assertEqual(bytes.fromhex(
+            "AABBCCFF112233445566FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCDAB04000600FF29020000000300FFB3FFFF00000000FF5CFFFF20000000FF38"), encoded)
+        self.assertTrue(builder.get().is_closed)
 
     def test_sector_encoder_not_enough_space(self):
         entries = [Entry(2, bytes.fromhex("AABBCC")), Entry(0xABCD, bytes.fromhex("112233445566"))]

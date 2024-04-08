@@ -56,8 +56,10 @@ class SectorBuilder:
             self.last_ate = ate
             return True
         except EncodingError as _:
-            # TODO: close ate
             return False
+
+    def close(self):
+        Ate(self.sector_size - Ate._SIZE, 0xFFFF, None, self.last_ate.ate_offset).to_bytes(self.data)
 
     def get(self) -> Sector:
         return Sector(self.data)

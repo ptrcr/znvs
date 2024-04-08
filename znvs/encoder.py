@@ -27,8 +27,8 @@ class Encoder:
                 if sector.add(entry):
                     consumed.append(entry)
                 else:
-                    # TODO: Close sector
                     # TODO: Validate it is possible to encode such entry in empty sector
+                    sector.close()
                     break
 
             # Remove entries that were successfully encoded
