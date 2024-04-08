@@ -1,4 +1,5 @@
 
+from typing import cast
 from .ate import Ate
 from .exception import ChecksumError, EncodingError
 from .entry import Entry
@@ -17,6 +18,8 @@ class Sector:
         except ChecksumError as _:
             self.sector_valid = False
 
+        self.last_ate_offset = cast(Ate, Ate.from_bytes(len(self.data) - Ate._SIZE, self.data)).data_offset if self.is_closed else None
+
     @property
     def is_closed(self):
         try:
@@ -25,16 +28,20 @@ class Sector:
             return False
 
     def __iter__(self):
-        self.idx = 2  # skip close_ate and gc_done ate
+        self.next_ate_offset = len(self.data) - Ate._SIZE * 3  # skip close_ate and gc_done ate
         return self
 
     def __next__(self) -> Ate:
         if not self.sector_valid:
             raise StopIteration
 
-        ate = Ate.from_bytes(len(self.data) - Ate._SIZE * (self.idx + 1), self.data)
+        # If sector is closed and we already processed last ate, do not even try to decode next ate
+        if self.last_ate_offset is not None and self.next_ate_offset < self.last_ate_offset:
+            raise StopIteration
+
+        ate = Ate.from_bytes(self.next_ate_offset, self.data)
         if ate:
-            self.idx += 1
+            self.next_ate_offset -= Ate._SIZE
             return ate
         else:
             raise StopIteration
@@ -54,6 +61,11 @@ class SectorBuilder:
         try:
             ate.to_bytes(self.data)
             self.last_ate = ate
+
+            # Automatically close sector is there is less space than for single ate
+            if ate.ate_offset - (ate.data_offset + ate.aligned_data_size) < Ate._SIZE:
+                self.close()
+
             return True
         except EncodingError as _:
             return False

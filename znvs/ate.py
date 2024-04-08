@@ -79,5 +79,5 @@ class Ate:
         # |  ID  | OFFS  |  LEN  | - |CRC|
         data_id, data_offset, data_length = struct.unpack_from("<HHH", ate_data)
         if not Ate._validate_crc(ate_data):
-            raise ChecksumError("ATE CRC is invalid")
+            raise ChecksumError(f"ATE CRC is invalid. Data id={hex(data_id)}")
         return Ate(ate_offset, data_id, sector_data[data_offset:data_offset + data_length] if data_length > 0 else None, data_offset)

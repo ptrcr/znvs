@@ -1,5 +1,4 @@
-from .ate import Ate
-from .nvs import Nvs
+from .exception import EncodingError
 from .entry import Entry
 from .sector import SectorBuilder
 import logging
@@ -27,7 +26,9 @@ class Encoder:
                 if sector.add(entry):
                     consumed.append(entry)
                 else:
-                    # TODO: Validate it is possible to encode such entry in empty sector
+                    # If sector is empty and entry could not be added it means it cannot fit into any sector
+                    if sum(1 for _ in sector.get()) == 0:
+                        raise EncodingError(f"Entry {entry.id=} cannot fit into sector of {self.sector_size=}")
                     sector.close()
                     break
 
