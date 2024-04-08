@@ -1,5 +1,5 @@
-import unittest
 import os
+import unittest
 
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8

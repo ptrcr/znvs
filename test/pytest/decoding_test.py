@@ -1,9 +1,9 @@
-import unittest
-from sample_descriptor import SampleDescriptor
 import os
+import unittest
 
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
+from sample_descriptor import SampleDescriptor
 from znvs.decoder import Decoder
 from znvs.exception import ChecksumError
 from znvs.nvs import Nvs
