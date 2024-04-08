@@ -17,11 +17,12 @@ class Encoder:
         """
         self.sector_size = sector_size
 
-    def dump(self, entries: list[Entry]) -> bytes:
+    def dump(self, entries: list[Entry], force_close: bool = False) -> bytes:
         """
         Serializes NVS entries to bytes.
         
         :param list[Entry] entries: List of Entries to be put into NVS
+        :param bool force_close: Forcibly closes every sector, even if not full
         :return: NVS with serialized Entries
         :raises EncodingError: if Entry cannot be fit into sector
         """
@@ -42,6 +43,9 @@ class Encoder:
             # Remove entries that were successfully encoded
             for entry in consumed:
                 entries.remove(entry)
+
+            if force_close:
+                sector.close()
 
             nvs = nvs + sector.get_bytes()
 
