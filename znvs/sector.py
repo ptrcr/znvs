@@ -6,7 +6,14 @@ from .entry import Entry
 
 
 class Sector:
+    """Class responsible for decoding and iterating over NVS sector."""
+
     def __init__(self, data: bytes):
+        """
+        Creates Sector.
+        
+        :param bytes data: Sector data
+        """
         self.data = data
         self.sector_valid = True
 
@@ -57,7 +64,14 @@ class Sector:
 
 
 class SectorBuilder:
-    def __init__(self, sector_size):
+    """Helper class for building NVS sector."""
+
+    def __init__(self, sector_size: int):
+        """
+        Creates SectorBuilder.
+
+        :param int sector_size: Size of sector
+        """
         self.sector_size = sector_size
         self.data = bytearray.fromhex("FF") * self.sector_size
 
@@ -66,6 +80,12 @@ class SectorBuilder:
         self.last_ate.to_bytes(self.data)
 
     def add(self, entry: Entry) -> bool:
+        """
+        Adds entry to sector.
+        
+        :param Entry entry: Entry to add
+        :return: True if entry added successfully, False otherwise
+        """
         ate = self.last_ate.next(entry.id, entry.value)
         try:
             ate.to_bytes(self.data)
@@ -80,10 +100,23 @@ class SectorBuilder:
             return False
 
     def close(self):
+        """
+        Marks sector as closed.
+        """
         Ate(self.sector_size - Ate._SIZE, 0xFFFF, None, self.last_ate.ate_offset).to_bytes(self.data)
 
     def get(self) -> Sector:
+        """
+        Returns built Sector.
+
+        :return: Sector
+        """
         return Sector(self.data)
 
     def get_bytes(self) -> bytes:
+        """
+        Returns bytes of built Sector.
+
+        :return: Sector bytes
+        """
         return bytes(self.data)

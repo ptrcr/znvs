@@ -3,7 +3,15 @@ from .sector import Sector
 
 
 class Nvs:
+    """Class responsible for iterating over NVS."""
+
     def __init__(self, data: bytes, sector_size: int):
+        """
+        Constructs NVS.
+        
+        :param bytes data: NVS data
+        :param int sector_size: Size of single NVS sector
+        """
         self.sectors = [Sector(data[i:i + sector_size]) for i in range(0, len(data), sector_size)]
         first_idx = None
         last_idx = None

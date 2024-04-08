@@ -4,17 +4,21 @@ from .nvs import Nvs
 
 
 class Decoder:
-    '''Class responsible for decoding binary NVS.'''
+    """Class responsible for decoding binary NVS."""
 
     def __init__(self, sector_size: int):
         """Crate nvs decoder.
 
-        Arguments:
-        sector_size -- size of single NVS sector
+        :param int sector_size: Size of single NVS sector
         """
         self.sector_size = sector_size
 
     def load(self, data: bytes) -> list[Entry]:
+        """
+        Loads NVS from bytes.
+        
+        :param bytes data: NVS data.
+        """
         if not len(data) % self.sector_size == 0:
             raise ParameterError("NVS size must be a multiplicity of sector_size.")
 

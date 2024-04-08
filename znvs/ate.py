@@ -8,11 +8,21 @@ from .exception import ChecksumError, EncodingError, ParameterError
 
 
 class Ate:
+    """Class responsible for Allocation Table Entry decoding/encoding."""
+
     _SIZE = 8
     _DATA_ALIGNMENT = 4
     _CRC_CALCULATOR = Calculator(Configuration(width=8, polynomial=0x07, init_value=0xff))
 
     def __init__(self, ate_offset: int, data_id: int, data: bytes, data_offset: int):
+        """
+        Initializes ATE.
+
+        :param int ate_offset: Offset of ATE
+        :param int data_id: ID of data to be allocated
+        :param bytes data: Data to be allocated
+        :param int data_offset: Offset of data in sector
+        """
         if data_offset % Ate._DATA_ALIGNMENT or ate_offset % Ate._DATA_ALIGNMENT:
             raise ParameterError("Offset not aligned")
 
@@ -22,7 +32,11 @@ class Ate:
         self.data = data
 
     def get_entry(self) -> Entry | None:
-        '''Returns Entry if Ate is not special kind (close of gc)'''
+        """
+        Returns Entry if ATE is not special kind (close of gc).
+
+        :return: Entry or None
+        """
         if self.is_close or self.is_gc_done:
             return None
         return Entry(self.data_id, self.data)
@@ -44,6 +58,11 @@ class Ate:
         return Ate._DATA_ALIGNMENT * math.ceil(self.data_len/Ate._DATA_ALIGNMENT)
 
     def to_bytes(self, sector_data: bytearray):
+        """
+        Serializes ATE into given sector.
+
+        :param bytearray sector_data: NVS sector data
+        """
         if self.data_offset + self.aligned_data_size > self.ate_offset:
             raise EncodingError("Data does not fit into sector")
 
@@ -58,6 +77,12 @@ class Ate:
         sector_data[self.ate_offset:self.ate_offset + Ate._SIZE] = ate
 
     def next(self, data_id: int, data: bytes) -> Ate:
+        """
+        Creates next Ate with given data_id and data.
+
+        :param int data_id: ID of data to be allocated
+        :param bytes data: Data to be allocated
+        """
         return Ate(self.ate_offset - Ate._SIZE, data_id, data, self.data_offset + self.aligned_data_size)
 
     @staticmethod
@@ -70,6 +95,13 @@ class Ate:
 
     @staticmethod
     def from_bytes(ate_offset: int, sector_data: bytes) -> Ate | None:
+        """
+        Deserializes Ate from bytes.
+
+        :param int ate_offset: Offset of Ate
+        :param bytearray sector_data: NVS sector data
+        :return: ATE or None if ate_offset points to empty sector data
+        """
         ate_data = sector_data[ate_offset:ate_offset + Ate._SIZE]
         if ate_data == bytes.fromhex("FFFFFFFFFFFFFFFF"):
             return None

@@ -7,17 +7,24 @@ logger = logging.getLogger(__name__)
 
 
 class Encoder:
-    '''Class responsible for encoding data to binary NVS image.'''
+    """Class responsible for encoding data to binary NVS image."""
 
     def __init__(self, sector_size: int):
         """Crate nvs encoder.
 
         Arguments:
-        sector_size -- size of single NVS sector
+        :param int sector_size: Size of single NVS sector
         """
         self.sector_size = sector_size
 
     def dump(self, entries: list[Entry]) -> bytes:
+        """
+        Serializes NVS entries to bytes.
+        
+        :param list[Entry] entries: List of Entries to be put into NVS
+        :return: NVS with serialized Entries
+        :raises EncodingError: if Entry cannot be fit into sector
+        """
         nvs = b''
         while len(entries) > 0:
             sector = SectorBuilder(self.sector_size)
