@@ -3,12 +3,30 @@ import os
 
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
+from sample_descriptor import SampleDescriptor
 from znvs.entry import Entry
 from znvs.nvs import Nvs
 from znvs.sector import Sector, SectorBuilder
 
 
 class TestSector(unittest.TestCase):
+    def test_sector_iterator(self):
+        descriptor = SampleDescriptor.load("sample_00")
+
+        sector_0 = descriptor.dump[:0x400]
+        for (expected, actual) in list(zip(descriptor.items, Sector(sector_0))):
+            self.assertEqual(expected, actual.get_entry(), f"\n{expected=}\n{actual.data=}")
+
+    def test_ate_iterator_sector_not_closed(self):
+        sector = Sector(bytes.fromhex("1122334455667788990011223344556677889900FFFFFFFFCDAB00001400FFD2FFFF00000000FF5CFFFFFFFFFFFFFFFF"))
+        entries = [Entry(0xABCD, bytes.fromhex("1122334455667788990011223344556677889900"))]  # just one entry
+
+        for expected, actual in zip(entries, sector):
+            self.assertEqual(expected.id, actual.data_id)
+            self.assertEqual(expected.value, actual.data)
+
+        self.assertFalse(sector.is_closed)
+
     def test_closed_sector_iteration(self):
         sector = Sector(bytes.fromhex("AABBCCFF112233445566FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCDAB04000600FF29020000000300FFB3FFFF00000000FF5CFFFF20000000FF38"))
         entries = [Entry(2, bytes.fromhex("AABBCC")), Entry(0xABCD, bytes.fromhex("112233445566"))]

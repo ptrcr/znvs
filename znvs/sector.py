@@ -1,7 +1,7 @@
 
 from typing import cast
 from .ate import Ate
-from .exception import ChecksumError, EncodingError
+from .exception import ChecksumError, EncodingError, DecodingError
 from .entry import Entry
 
 
@@ -18,8 +18,6 @@ class Sector:
         except ChecksumError as _:
             self.sector_valid = False
 
-        self.last_ate_offset = cast(Ate, Ate.from_bytes(len(self.data) - Ate._SIZE, self.data)).data_offset if self.is_closed else None
-
     @property
     def is_closed(self):
         try:
@@ -29,6 +27,8 @@ class Sector:
 
     def __iter__(self):
         self.next_ate_offset = len(self.data) - Ate._SIZE * 3  # skip close_ate and gc_done ate
+        self.last_ate_offset = cast(Ate, Ate.from_bytes(len(self.data) - Ate._SIZE, self.data)).data_offset if self.is_closed else None
+        self.data_offset = 0
         return self
 
     def __next__(self) -> Ate:
@@ -39,8 +39,17 @@ class Sector:
         if self.last_ate_offset is not None and self.next_ate_offset < self.last_ate_offset:
             raise StopIteration
 
+        # Data reached allocation table, sector should be closed
+        if self.next_ate_offset < self.data_offset:
+            raise StopIteration
+
         ate = Ate.from_bytes(self.next_ate_offset, self.data)
+
         if ate:
+            self.data_offset = ate.data_offset + ate.aligned_data_size
+            if self.data_offset > self.next_ate_offset:
+                raise DecodingError("Data overlaps with allocation table")
+
             self.next_ate_offset -= Ate._SIZE
             return ate
         else:

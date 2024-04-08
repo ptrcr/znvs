@@ -1,12 +1,11 @@
 import unittest
-from sample_descriptor import SampleDescriptor
 import os
 
 from site import addsitedir  # nopep8
 addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
+from sample_descriptor import SampleDescriptor
 from znvs.ate import Ate
 from znvs.exception import EncodingError
-from znvs.sector import Sector
 
 
 class TestAte(unittest.TestCase):
@@ -28,20 +27,13 @@ class TestAte(unittest.TestCase):
         done_ate = Ate.from_bytes(0x400-8, sector)
         self.assertTrue(done_ate.is_close)
 
-    def test_ate_iterator(self):
-        descriptor = SampleDescriptor.load("sample_00")
-
-        sector_0 = descriptor.dump[:0x400]
-        for (expected, actual) in list(zip(descriptor.items, iter(Sector(sector_0)))):
-            self.assertEqual(expected, actual.get_entry(), f"\n{expected=}\n{actual.data=}")
-
     def test_ate_encoder(self):
         sector = bytearray.fromhex("FF") * 32
         item1_data = bytes.fromhex("AABBCCDDEE")
         ate = Ate(24, 2, item1_data, 8)
         self.assertEqual(ate.data, item1_data)
         self.assertEqual(8, ate.aligned_data_size)
-        
+
         ate.to_bytes(sector)
         self.assertEqual(bytes(sector[:-1]), bytes.fromhex("FFFFFFFFFFFFFFFFAABBCCDDEEFFFFFFFFFFFFFFFFFFFFFF020008000500FF"))
         self.assertTrue(Ate._validate_crc(sector[24:]))
@@ -54,13 +46,13 @@ class TestAte(unittest.TestCase):
 
     def test_ate_encode_many_items(self):
         sector = bytearray.fromhex("FF") * 40
-        
+
         item1_id = 2
         item1_data = bytes.fromhex("AABBCCDDEE")
         ate1 = Ate(32, item1_id, item1_data, 0)
         self.assertEqual(ate1.data, item1_data)
         self.assertEqual(8, ate1.aligned_data_size)
-        
+
         item2_id = 3
         item2_data = bytes.fromhex("112233445566778899")
         ate2 = ate1.next(item2_id, item2_data)
