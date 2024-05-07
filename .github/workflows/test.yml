@@ -10,6 +10,10 @@ jobs:
       matrix:
         python-version: ["pypy3.10", "3.10", "3.11", "3.12"]
     
+    permissions:
+      checks: write
+      pull-requests: write
+    
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -17,7 +21,14 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip' # caching pip dependencies
       - run: pip install -r test/pytest/requirements.txt
       - run: pip install -r znvs/requirements.txt
-      - run: bash ${{ github.workspace }}/script/run_pytest.sh
+      - run: pip install pytest
+      - run: bash ${{ github.workspace }}/script/run_pytest.sh test_report_${{ matrix.python-version }}.xml
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action/macos@v2
+        if: always()
+        with:
+          files: |
+            ${{ github.workspace }}/test/pytest/**/*.xml
+          check_name: Test Results Python ${{ github.workspace }}
