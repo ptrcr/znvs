@@ -2,7 +2,7 @@ import os
 import unittest
 
 from site import addsitedir  # nopep8
-addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../'))  # nopep8
+addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../src'))  # nopep8
 from sample_descriptor import SampleDescriptor
 from znvs.ate import Ate
 from znvs.exception import EncodingError
