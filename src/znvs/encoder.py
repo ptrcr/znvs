@@ -17,7 +17,7 @@ class Encoder:
         """
         self.sector_size = sector_size
 
-    def dump(self, entries: list[Entry], force_close: bool = False) -> bytes:
+    def dump(self, entries: dict[int, bytes], force_close: bool = False) -> bytes:
         """
         Serializes NVS entries to bytes.
         
@@ -29,20 +29,20 @@ class Encoder:
         nvs = b''
         while len(entries) > 0:
             sector = SectorBuilder(self.sector_size)
-            consumed: list[Entry] = []
-            for entry in entries:
-                if sector.add(entry):
-                    consumed.append(entry)
+            consumed: list[int] = []
+            for id, value in entries.items():
+                if sector.add(Entry(id, value)):
+                    consumed.append(id)
                 else:
                     # If sector is empty and entry could not be added it means it cannot fit into any sector
                     if sum(1 for _ in sector.get()) == 0:
-                        raise EncodingError(f"Entry {entry.id=} cannot fit into sector of {self.sector_size=}")
+                        raise EncodingError(f"Entry {id=} cannot fit into sector of {self.sector_size=}")
                     sector.close()
                     break
 
             # Remove entries that were successfully encoded
-            for entry in consumed:
-                entries.remove(entry)
+            for id in consumed:
+                entries.pop(id)
 
             if force_close:
                 sector.close()

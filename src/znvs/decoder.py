@@ -1,4 +1,3 @@
-from .entry import Entry
 from .exception import ParameterError
 from .nvs import Nvs
 
@@ -13,7 +12,7 @@ class Decoder:
         """
         self.sector_size = sector_size
 
-    def load(self, data: bytes) -> list[Entry]:
+    def load(self, data: bytes) -> dict[int, bytes]:
         """
         Loads NVS from bytes.
         
@@ -29,4 +28,5 @@ class Decoder:
                 entry = ate.get_entry()
                 entries[entry.id] = entry.value
 
-        return [Entry(id, data) for id, data in entries.items() if data is not None]
+
+        return {id: data for id, data in entries.items() if data is not None}
