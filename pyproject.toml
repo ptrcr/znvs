@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=67.7", "wheel", "setuptools-git-versioning"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[project]
+name = "znvs"
+description = "Tool to encode and decode Zephyrproject NVS filesystem."
+dynamic = ["version"]
+authors = [{name = "Piotr Ciura"}]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["crc~=6.1"]
+
+[project.optional-dependencies]
+dev = ["PyYAML~=6.0", "pytest~=7.2"]
+
+[project.urls]
+"Homepage" = "https://github.com/ptrcr/znvs"

@@ -1,0 +1,9 @@
+include src/znvs/__init__.py
+include src/znvs/ate.py
+include src/znvs/decoder.py
+include src/znvs/encoder.py
+include src/znvs/entry.py
+include src/znvs/exception.py
+include src/znvs/nvs.py
+include src/znvs/sector.py
+include src/znvs/util.py
