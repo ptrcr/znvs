@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r test/pytest/requirements.txt
-      - run: pip install -r znvs/requirements.txt
+      - run: pip install -r src/znvs/requirements.txt
       - run: pip install pytest
       - run: bash ${{ github.workspace }}/script/run_pytest.sh test_report_${{ matrix.python-version }}.xml
       - name: Publish Test Results
