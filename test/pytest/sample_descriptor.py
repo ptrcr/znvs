@@ -14,7 +14,7 @@ class SampleDescriptor:
     
     def __init__(self, nvs: dict, content: list[dict], dump: str):
         self.nvs = SampleDescriptor.Nvs(**nvs)
-        self.items = [Entry(item["item"]["id"], bytes.fromhex(item["item"]["hex_value"])) for item in content]
+        self.items = {item["item"]["id"]: bytes.fromhex(item["item"]["hex_value"]) for item in content}
         with open(os.path.join(SampleDescriptor.SAMPLES_DIR, dump), 'rb') as dump_file:
             self.dump = dump_file.read()
 

@@ -17,8 +17,7 @@ class TestAte(unittest.TestCase):
         self.assertTrue(gc_ate.is_gc_done)
 
         data_ate = Ate.from_bytes(0x400-24, sector)
-        self.assertEqual(descriptor.items[0].id, data_ate.data_id)
-        self.assertEqual(descriptor.items[0].value, data_ate.data)
+        self.assertEqual(descriptor.items[data_ate.data_id], data_ate.data)
 
     def test_ate_decoder_close_ate(self):
         descriptor = SampleDescriptor.load("sample_02")

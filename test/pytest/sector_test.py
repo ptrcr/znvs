@@ -14,7 +14,7 @@ class TestSector(unittest.TestCase):
         descriptor = SampleDescriptor.load("sample_00")
 
         sector_0 = descriptor.dump[:0x400]
-        for (expected, actual) in list(zip(descriptor.items, Sector(sector_0))):
+        for (expected, actual) in list(zip(descriptor.items.items(), Sector(sector_0))):
             self.assertEqual(expected, actual.get_entry(), f"\n{expected=}\n{actual.data=}")
 
     def test_ate_iterator_sector_not_closed(self):
