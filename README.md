@@ -5,6 +5,12 @@ Tools for manipulating [Zephyr Non-Volatile Storage](https://docs.zephyrproject.
 
 * Python3
 
+## Installation
+
+```
+pip install znvs
+```
+
 ## Usage
 
 ### Preparing NVS
