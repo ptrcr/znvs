@@ -14,7 +14,7 @@ class Ate:
     _DATA_ALIGNMENT = 4
     _CRC_CALCULATOR = Calculator(Configuration(width=8, polynomial=0x07, init_value=0xff))
 
-    def __init__(self, ate_offset: int, data_id: int, data: bytes, data_offset: int):
+    def __init__(self, ate_offset: int, data_id: int, data: bytes, data_offset: int, first_in_sector: bool = False):
         """
         Initializes ATE.
 
@@ -30,6 +30,7 @@ class Ate:
         self.data_id = data_id
         self.data_offset = data_offset
         self.data = data
+        self.first_in_sector = first_in_sector
 
     def get_entry(self) -> Entry | None:
         """
@@ -47,11 +48,11 @@ class Ate:
 
     @property
     def is_close(self):
-        return self.data_id == 0xFFFF and self.data is None and self.data_offset != 0x00
+        return self.data_id == 0xFFFF and self.data is None and self.data_offset != 0x00 and self.first_in_sector
 
     @property
     def is_gc_done(self):
-        return self.data_id == 0xFFFF and self.data is None and self.data_offset == 0x00
+        return self.data_id == 0xFFFF and self.data is None and not self.first_in_sector
 
     @property
     def aligned_data_size(self):
@@ -112,4 +113,8 @@ class Ate:
         data_id, data_offset, data_length = struct.unpack_from("<HHH", ate_data)
         if not Ate._validate_crc(ate_data):
             raise ChecksumError(f"ATE CRC is invalid. Data id={hex(data_id)}")
-        return Ate(ate_offset, data_id, sector_data[data_offset:data_offset + data_length] if data_length > 0 else None, data_offset)
+        return Ate(ate_offset,
+                   data_id,
+                   sector_data[data_offset:data_offset + data_length] if data_length > 0 else None,
+                   data_offset,
+                   first_in_sector=ate_offset == len(sector_data) - Ate._SIZE)

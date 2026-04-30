@@ -1,7 +1,7 @@
 
 from typing import cast
 from .ate import Ate
-from .exception import ChecksumError, EncodingError, DecodingError
+from .exception import EncodingError, DecodingError
 from .entry import Entry
 
 
@@ -11,37 +11,29 @@ class Sector:
     def __init__(self, data: bytes):
         """
         Creates Sector.
-        
+
         :param bytes data: Sector data
         """
         self.data = data
-        self.sector_valid = True
-
-        try:
-            # GC done ate
-            gc_done = Ate.from_bytes(len(self.data) - Ate._SIZE * 2, self.data)
-            if gc_done is None or not gc_done.is_gc_done:
-                self.sector_valid = False
-        except ChecksumError as _:
-            self.sector_valid = False
 
     @property
     def is_closed(self):
         try:
-            return Ate.from_bytes(len(self.data) - Ate._SIZE, self.data).is_close
-        except:
+            ate = Ate.from_bytes(len(self.data) - Ate._SIZE, self.data)
+            if ate is not None:
+                return ate.is_close
+            return False
+        except Exception as e:
             return False
 
     def __iter__(self):
-        self.next_ate_offset = len(self.data) - Ate._SIZE * 3  # skip close_ate and gc_done ate
-        self.last_ate_offset = cast(Ate, Ate.from_bytes(len(self.data) - Ate._SIZE, self.data)).data_offset if self.is_closed else None
+        self.next_ate_offset = len(self.data) - Ate._SIZE * 2  # skip close_ate
+        self.last_ate_offset = cast(Ate, Ate.from_bytes(len(self.data) - Ate._SIZE,
+                                    self.data)).data_offset if self.is_closed else None
         self.data_offset = 0
         return self
 
     def __next__(self) -> Ate:
-        if not self.sector_valid:
-            raise StopIteration
-
         # If sector is closed and we already processed last ate, do not even try to decode next ate
         if self.last_ate_offset is not None and self.next_ate_offset < self.last_ate_offset:
             raise StopIteration
@@ -58,6 +50,8 @@ class Sector:
                 raise DecodingError("Data overlaps with allocation table")
 
             self.next_ate_offset -= Ate._SIZE
+            if ate.is_gc_done:
+                return self.__next__()  # skip GC done ATE
             return ate
         else:
             raise StopIteration
@@ -82,7 +76,7 @@ class SectorBuilder:
     def add(self, entry: Entry) -> bool:
         """
         Adds entry to sector.
-        
+
         :param Entry entry: Entry to add
         :return: True if entry added successfully, False otherwise
         """
@@ -103,7 +97,7 @@ class SectorBuilder:
         """
         Marks sector as closed.
         """
-        Ate(self.sector_size - Ate._SIZE, 0xFFFF, None, self.last_ate.ate_offset).to_bytes(self.data)
+        Ate(self.sector_size - Ate._SIZE, 0xFFFF, None, self.last_ate.ate_offset, first_in_sector=True).to_bytes(self.data)
 
     def get(self) -> Sector:
         """
